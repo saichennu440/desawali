@@ -30,20 +30,27 @@ export const useCart = () => {
   }, [items])
 
   const addItem = (product: Omit<CartItem, 'quantity'>, quantity: number = 1) => {
+    console.log('Adding item to cart:', product, quantity)
     setItems(currentItems => {
       const existingItem = currentItems.find(item => item.product_id === product.product_id)
       
       if (existingItem) {
+        console.log('Item exists, updating quantity')
         return currentItems.map(item =>
           item.product_id === product.product_id
             ? { ...item, quantity: item.quantity + quantity }
             : item
         )
       } else {
+        console.log('New item, adding to cart')
         return [...currentItems, { ...product, quantity }]
       }
     })
-    setIsOpen(true) // Show cart sidebar when item is added
+    
+    // Show cart sidebar when item is added
+    setTimeout(() => {
+      setIsOpen(true)
+    }, 100)
   }
 
   const removeItem = (productId: string) => {

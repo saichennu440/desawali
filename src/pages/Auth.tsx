@@ -82,13 +82,16 @@ const Auth: React.FC = () => {
         if (error) {
           setErrors({ email: error.message })
         } else {
-          navigate('/auth?message=check-email')
+          // For demo purposes, redirect to home after signup
+          // In production, you might want to show email verification message
+          navigate(from, { replace: true })
         }
       } else {
         const { error } = await signIn(formData.email, formData.password)
         if (error) {
           setErrors({ email: error.message })
         } else {
+          console.log('Sign in successful, redirecting to:', from)
           navigate(from, { replace: true })
         }
       }

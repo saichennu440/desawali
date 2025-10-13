@@ -1,23 +1,24 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 import { Star, Plus } from 'lucide-react'
 import { formatCurrency } from '../../utils/helpers'
-import { useCart } from '../../hooks/useCart'
+import { useCartContext } from '../../context/CartContext'
 import type { Product } from '../../types'
 import Button from './Button'
 
 interface ProductCardProps {
   product: Product
-  onViewDetails?: (product: Product) => void
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({
   product,
-  onViewDetails,
 }) => {
-  const { addItem, hasItem } = useCart()
+  const { addItem, hasItem } = useCartContext()
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation()
+    e.preventDefault()
+    console.log('Adding product to cart:', product.title)
     addItem({
       product_id: product.id,
       title: product.title,
@@ -27,20 +28,15 @@ const ProductCard: React.FC<ProductCardProps> = ({
     })
   }
 
-  const handleCardClick = () => {
-    if (onViewDetails) {
-      onViewDetails(product)
-    }
-  }
-
   const isOutOfStock = product.inventory <= 0
   const inCart = hasItem(product.id)
 
   return (
-    <div
-      className="group relative bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 cursor-pointer overflow-hidden"
-      onClick={handleCardClick}
-    >
+    <Link to={`/product/${product.slug}`} className="group block">
+      <div
+        className="relative bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 overflow-hidden"
+        data-testid="product-card"
+      >
       {/* Product Badge */}
       {product.metadata?.badge && (
         <div className="absolute top-3 left-3 z-10">
@@ -100,13 +96,15 @@ const ProductCard: React.FC<ProductCardProps> = ({
             onClick={handleAddToCart}
             disabled={isOutOfStock}
             className="flex items-center gap-1"
+            data-testid="add-to-cart"
           >
             <Plus className="h-4 w-4" />
             {inCart ? 'Added' : 'Add'}
           </Button>
         </div>
       </div>
-    </div>
+      </div>
+    </Link>
   )
 }
 

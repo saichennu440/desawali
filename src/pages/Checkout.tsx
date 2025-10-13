@@ -135,7 +135,7 @@ const Checkout: React.FC = () => {
     setLoading(true)
     
     try {
-      // Create order in database
+      console.log('Creating order...')
       const orderData = {
         user_id: user?.id,
         items: items.map(item => ({
@@ -155,17 +155,24 @@ const Checkout: React.FC = () => {
         notes: formData.notes,
       }
 
-      // TODO: Implement actual order creation API call
-      console.log('Creating order:', orderData)
+      // Create order in Supabase
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .insert(orderData)
+        .select()
+        .single()
+
+      if (orderError) {
+        console.error('Error creating order:', orderError)
+        setErrors({ submit: 'Failed to create order. Please try again.' })
+        return
+      }
+
+      console.log('Order created successfully:', order.id)
 
       if (formData.paymentMethod === 'phonepe') {
-        // TODO: Integrate with PhonePe payment gateway
-        console.log('Redirecting to PhonePe payment...')
-        // Simulate payment success for now
-        setTimeout(() => {
-          clearCart()
-          navigate('/account/orders?success=true')
-        }, 2000)
+        // Redirect to PhonePe payment
+        await initiatePhonePePayment(order.id, total, formData.phone)
       } else {
         // Cash on Delivery
         clearCart()
@@ -179,6 +186,38 @@ const Checkout: React.FC = () => {
     }
   }
 
+  const initiatePhonePePayment = async (orderId: string, amount: number, phone: string) => {
+    try {
+      console.log('Initiating PhonePe payment for order:', orderId)
+      
+      // Call our serverless function to create PhonePe payment
+      const response = await fetch('/api/phonepe/create-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          order_id: orderId,
+          amount: amount * 100, // Convert to paise
+          user_phone: phone,
+          user_email: user?.email,
+        }),
+      })
+
+      const paymentData = await response.json()
+
+      if (paymentData.status === 'success' && paymentData.payment_url) {
+        // Redirect to PhonePe payment page
+        window.location.href = paymentData.payment_url
+      } else {
+        console.error('Payment initiation failed:', paymentData.message)
+        setErrors({ submit: paymentData.message || 'Payment initiation failed' })
+      }
+    } catch (error) {
+      console.error('Error initiating payment:', error)
+      setErrors({ submit: 'Failed to initiate payment. Please try again.' })
+    }
+  }
   const steps = [
     { number: 1, title: 'Contact', completed: currentStep > 1 },
     { number: 2, title: 'Shipping', completed: currentStep > 2 },

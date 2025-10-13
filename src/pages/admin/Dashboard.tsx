@@ -324,25 +324,9 @@ const AdminDashboard: React.FC = () => {
             </div>
           } />
           
-          <Route path="/products" element={
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">Products Management</h2>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add New Product
-                </Button>
-              </div>
-              <p className="text-gray-600">Product management interface coming soon...</p>
-            </div>
-          } />
+          <Route path="/products" element={<AdminProducts />} />
           
-          <Route path="/orders" element={
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Orders Management</h2>
-              <p className="text-gray-600">Order management interface coming soon...</p>
-            </div>
-          } />
+          <Route path="/orders" element={<AdminOrders />} />
           
           <Route path="/customers" element={
             <div className="bg-white rounded-xl shadow-sm p-6">
@@ -355,5 +339,9 @@ const AdminDashboard: React.FC = () => {
     </div>
   )
 }
+
+// Import the new admin pages
+import AdminProducts from './Products'
+import AdminOrders from './Orders'
 
 export default AdminDashboard

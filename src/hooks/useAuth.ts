@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import type { User } from '@supabase/supabase-js'
 import type { User as AppUser } from '../types'
@@ -8,9 +8,47 @@ export const useAuth = () => {
   const [profile, setProfile] = useState<AppUser | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // Fetch profile helper (unchanged except small log)
-  const fetchProfile = useCallback(async (userId: string) => {
+  useEffect(() => {
+    // Get initial session
+    const getInitialSession = async () => {
+      try {
+      const { data: { session } } = await supabase.auth.getSession()
+      setUser(session?.user ?? null)
+      
+      if (session?.user) {
+        await fetchProfile(session.user.id)
+      }
+      } catch (error) {
+        console.error('Error getting initial session:', error)
+      } finally {
+      setLoading(false)
+      }
+    }
+
+    getInitialSession()
+
+    // Listen for auth state changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.email)
+      setUser(session?.user ?? null)
+      
+      if (session?.user) {
+        await fetchProfile(session.user.id)
+      } else {
+        setProfile(null)
+      }
+      
+      setLoading(false)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  const fetchProfile = async (userId: string) => {
     try {
+      console.log('Fetching profile for user:', userId)
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -18,11 +56,17 @@ export const useAuth = () => {
         .single()
 
       if (error) {
-        // single() returns an error code when no rows; we'll log for debug
-        console.error('Error fetching profile:', error)
+        if (error.code === 'PGRST116') {
+          // Profile doesn't exist, this is normal for new users
+          console.log('Profile not found, user may need to complete setup')
+          setProfile(null)
+        } else {
+          console.error('Error fetching profile:', error)
+        }
         return
       }
 
+      console.log('Profile fetched successfully:', data)
       setProfile({
         ...data,
         email: user?.email || '',
@@ -30,169 +74,75 @@ export const useAuth = () => {
     } catch (error) {
       console.error('Error fetching profile:', error)
     }
-  }, [user])
+  }
 
-  // Upsert profile helper (idempotent, safe for RLS)
-  const upsertProfile = useCallback(
-    async (u: User | null, opts?: { full_name?: string; phone?: string }) => {
-      if (!u) return { error: 'No user provided' }
-
-      try {
-        console.log('[useAuth] upsertProfile user.id=', u.id)
-        const full_name = opts?.full_name ?? (u.user_metadata as any)?.full_name ?? ''
-        const phone = opts?.phone ?? (u.user_metadata as any)?.phone ?? ''
-
-        const { data, error } = await supabase
-          .from('profiles')
-          .upsert(
-            [
-              {
-                id: u.id,
-                full_name,
-                phone,
-                is_admin: false,
-              },
-            ],
-            { onConflict: 'id' }
-          )
-          .select()
-
-        if (error) {
-          console.error('[useAuth] upsertProfile error:', error)
-          return { error }
-        }
-
-        console.log('[useAuth] upsertProfile success', data)
-        // update local profile state
-        setProfile((prev) => ({ ...(prev ?? {}), ...(data?.[0] ?? {}), email: u.email ?? '' } as AppUser))
-        return { data }
-      } catch (error) {
-        console.error('[useAuth] upsertProfile exception', error)
-        return { error }
-      }
-    },
-    []
-  )
-
-  // Initial session + profile load
-  useEffect(() => {
-    let mounted = true
-
-    const getInitialSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!mounted) return
-        setUser(session?.user ?? null)
-
-        if (session?.user) {
-          // ensure profile exists / load it
-          await fetchProfile(session.user.id)
-        }
-
-      } catch (err) {
-        console.error('getInitialSession error', err)
-      } finally {
-        if (mounted) setLoading(false)
-      }
-    }
-
-    getInitialSession()
-
-    // subscribe to auth changes (handles email-confirm flows)
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('[useAuth] onAuthStateChange', event)
-      setUser(session?.user ?? null)
-
-      if (session?.user) {
-        // Debug: show that a token exists
-        console.log('[useAuth] session.user.id =', session.user.id, 'has token?', !!session.access_token)
-
-        // Try to fetch existing profile
-        try {
-          const { data: existing, error: selectError } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('id', session.user.id)
-            .single()
-
-          if (selectError) {
-            // If 404/no rows, single() returns error; ignore it and create profile
-            console.log('[useAuth] profile select error (may be no row):', selectError.message ?? selectError)
-            // Upsert will create if missing
-            await upsertProfile(session.user)
-          } else if (!existing) {
-            // not found -> create
-            await upsertProfile(session.user)
-          } else {
-            // found -> fetch full profile
-            await fetchProfile(session.user.id)
-          }
-        } catch (err) {
-          console.error('[useAuth] onAuthStateChange error', err)
-        }
-      } else {
-        setProfile(null)
-      }
-
-      setLoading(false)
-    })
-
-    return () => {
-      mounted = false
-      subscription.unsubscribe()
-    }
-  }, [fetchProfile, upsertProfile])
-
-  // Sign in (unchanged, but now we upsert profile on success)
   const signIn = async (email: string, password: string) => {
+    try {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
+      
+      if (!error && data.user) {
+        console.log('Sign in successful:', data.user.email)
+      }
+      
+    return { data, error }
+    } catch (error) {
+      console.error('Sign in error:', error)
+      return { data: null, error }
+    }
+  }
 
-    if (!error && data?.user && data?.session) {
-      // session present: ensure profile exists
-      await upsertProfile(data.user)
-      await fetchProfile(data.user.id)
+  const signUp = async (email: string, password: string, fullName: string) => {
+    try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    })
+
+        console.log('Sign up successful, creating profile:', data.user.email)
+    if (!error && data.user) {
+      // Create profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: data.user.id,
+          full_name: fullName,
+        })
+
+      if (profileError) {
+        } else {
+          console.log('Profile created successfully')
+        console.error('Error creating profile:', profileError)
+      }
     }
 
     return { data, error }
-  }
-
-  // Sign up (improved: pass metadata, handle session/no-session)
-  const signUp = async (email: string, password: string, fullName?: string, phone?: string) => {
-    const { data, error } = await supabase.auth.signUp(
-      { email, password },
-      { data: { full_name: fullName ?? '', phone: phone ?? '' } }
-    )
-
-    if (!error && data?.user && data?.session) {
-      // Immediate session (no email confirmation required) -> upsert profile now
-      await upsertProfile(data.user, { full_name: fullName, phone })
-    } else {
-      // No immediate session (email confirm flow) -> profile will be created on sign-in via onAuthStateChange
-      console.log('[useAuth] signUp created user but no session; profile will be created on sign-in after confirmation.')
+    } catch (error) {
+      console.error('Sign up error:', error)
+      return { data: null, error }
     }
-
-    return { data, error }
   }
 
-  // Sign out (unchanged)
   const signOut = async () => {
+    try {
     const { error } = await supabase.auth.signOut()
-    if (!error) {
-      setUser(null)
-      setProfile(null)
-    }
+      if (!error) {
+        setUser(null)
+        setProfile(null)
+      }
     return { error }
+    } catch (error) {
+      console.error('Sign out error:', error)
+      return { error }
+    }
   }
 
-  // Update profile (unchanged except keep state in sync)
   const updateProfile = async (updates: Partial<AppUser>) => {
     if (!user) return { error: new Error('No user logged in') }
 
+    try {
     const { data, error } = await supabase
       .from('profiles')
       .update(updates)
@@ -201,10 +151,14 @@ export const useAuth = () => {
       .single()
 
     if (!error && data) {
-      setProfile({ ...profile, ...data, email: user.email || '' } as AppUser)
+      setProfile({ ...profile, ...data, email: user.email || '' })
     }
 
     return { data, error }
+    } catch (error) {
+      console.error('Update profile error:', error)
+      return { data: null, error }
+    }
   }
 
   return {

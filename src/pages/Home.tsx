@@ -14,11 +14,14 @@ const Home: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        console.log('Fetching home page data...')
         // Fetch categories
         const { data: categoriesData } = await supabase
           .from('categories')
           .select('*')
           .order('name')
+
+        console.log('Categories fetched:', categoriesData?.length)
 
         // Fetch featured products
         const { data: productsData } = await supabase
@@ -29,6 +32,8 @@ const Home: React.FC = () => {
           `)
           .eq('is_active', true)
           .limit(8)
+
+        console.log('Products fetched:', productsData?.length)
 
         setCategories(categoriesData || [])
         setFeaturedProducts(productsData || [])

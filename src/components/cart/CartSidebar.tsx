@@ -32,7 +32,7 @@ const CartSidebar: React.FC = () => {
       {/* Sidebar */}
       <div className={`fixed right-0 top-0 h-full w-96 max-w-full bg-white shadow-xl z-50 transform transition-transform duration-300 ease-in-out ${
         isOpen ? 'translate-x-0' : 'translate-x-full'
-      }`}>
+      }`} data-testid="cart-sidebar">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">
@@ -47,7 +47,7 @@ const CartSidebar: React.FC = () => {
         </div>
 
         {/* Content */}
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col ">
           {items.length === 0 ? (
             /* Empty State */
             <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
@@ -69,7 +69,7 @@ const CartSidebar: React.FC = () => {
               {/* Cart Items */}
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 {items.map((item) => (
-                  <div key={item.product_id} className="flex items-center space-x-4">
+                  <div key={item.product_id} className="flex items-center space-x-4" data-testid="cart-item">
                     {/* Product Image */}
                     <div className="flex-shrink-0 w-16 h-16 bg-gray-100 rounded-lg overflow-hidden">
                       <img
@@ -94,15 +94,17 @@ const CartSidebar: React.FC = () => {
                           onClick={() => updateQuantity(item.product_id, item.quantity - 1)}
                           className="p-1 hover:bg-gray-100 rounded transition-colors"
                           disabled={item.quantity <= 1}
+                          data-testid="decrease-quantity"
                         >
                           <Minus className="h-4 w-4" />
                         </button>
-                        <span className="text-sm font-medium w-8 text-center">
+                        <span className="text-sm font-medium w-8 text-center" data-testid="item-quantity">
                           {item.quantity}
                         </span>
                         <button
                           onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
                           className="p-1 hover:bg-gray-100 rounded transition-colors"
+                          data-testid="increase-quantity"
                         >
                           <Plus className="h-4 w-4" />
                         </button>
@@ -139,6 +141,7 @@ const CartSidebar: React.FC = () => {
                     <Button
                       className="w-full"
                       onClick={() => setIsOpen(false)}
+                      data-testid="checkout-button"
                     >
                       Checkout
                     </Button>

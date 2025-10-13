@@ -11,14 +11,16 @@ import {
   Settings
 } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
-import { useCart } from '../../hooks/useCart'
+//import { useAuth } from '../../context/AuthContext'
+
+import { useCartContext } from '../../context/CartContext'
 import Button from '../ui/Button'
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const { user, profile, signOut, isAdmin } = useAuth()
-  const { getItemCount, setIsOpen: setCartOpen } = useCart()
+  const { getItemCount, setIsOpen: setCartOpen } = useCartContext()
   const navigate = useNavigate()
 
   const handleSignOut = async () => {
@@ -28,6 +30,8 @@ const Header: React.FC = () => {
   }
 
   const cartItemCount = getItemCount()
+  
+  console.log('Header render - cartItemCount:', cartItemCount, 'user:', user?.email, 'profile:', profile?.full_name)
 
   return (
     <header className="sticky top-0 z-40 bg-white shadow-sm border-b border-gray-200">
@@ -72,19 +76,21 @@ const Header: React.FC = () => {
           {/* Right side actions */}
           <div className="flex items-center space-x-4">
             {/* Search */}
-            {/* <button className="p-2 text-gray-400 hover:text-gray-500 transition-colors">
+            <button className="p-2 text-gray-400 hover:text-gray-500 transition-colors">
               <Search className="h-5 w-5" />
               <span className="sr-only">Search</span>
-            </button> */}
+            </button>
 
             {/* Cart */}
             <button
               onClick={() => setCartOpen(true)}
               className="relative p-2 text-gray-400 hover:text-gray-500 transition-colors"
+              data-testid="cart-button"
             >
               <ShoppingCart className="h-5 w-5" />
               {cartItemCount > 0 && (
                 <span className="absolute -top-1 -right-1 h-5 w-5 bg-primary-600 text-white rounded-full text-xs flex items-center justify-center">
+                  data-testid="cart-badge"
                   {cartItemCount}
                 </span>
               )}

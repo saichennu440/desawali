@@ -16,16 +16,17 @@ import Orders from './pages/Orders'
 import Auth from './pages/Auth'
 import About from './pages/About'
 import Contact from './pages/Contact'
+import PaymentSuccess from './pages/PaymentSuccess'
 import Admin from './pages/admin/Dashboard'
 //import NotFound from './pages/NotFound'
-
-// Protected Route Component
+//import { AuthProvider } from './context/AuthContext' // <- new// Protected Route Component
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import AdminRoute from './components/auth/AdminRoute'
 
 function App() {
   return (
     <Router>
+      
       <CartProvider>
         <div className="min-h-screen bg-cream-100 flex flex-col">
           <Header />
@@ -39,6 +40,7 @@ function App() {
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/payment/success" element={<PaymentSuccess />} />
               
               {/* Protected Routes */}
               <Route
@@ -77,7 +79,7 @@ function App() {
               />
 
               {/* 404 */}
-              {/* <Route path="*" element={<NotFound />} /> */}
+             
             </Routes>
           </main>
 
@@ -85,8 +87,10 @@ function App() {
           <CartSidebar />
         </div>
       </CartProvider>
+     
     </Router>
   )
+  
 }
 
 export default App
