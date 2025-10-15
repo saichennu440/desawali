@@ -70,9 +70,15 @@ const Shop: React.FC = () => {
       // Apply category filter
       const categoryParam = searchParams.get('category')
       if (categoryParam) {
-        const category = categories.find(c => c.slug === categoryParam)
-        if (category) {
-          query = query.eq('category_id', category.id)
+        // Find category by slug
+        const { data: categoryData } = await supabase
+          .from('categories')
+          .select('id')
+          .eq('slug', categoryParam)
+          .single()
+        
+        if (categoryData) {
+          query = query.eq('category_id', categoryData.id)
         }
       }
 

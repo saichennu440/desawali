@@ -153,7 +153,7 @@ const Home: React.FC = () => {
             {categories.map((category) => (
               <Link
                 key={category.id}
-                to={`/shop?category=${category.slug}`}
+                to={`/shop?category=${encodeURIComponent(category.slug)}`}
                 className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 p-8 hover:shadow-xl transition-all duration-300"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 to-seafood-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>

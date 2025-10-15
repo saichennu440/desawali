@@ -31,7 +31,7 @@ const Header: React.FC = () => {
 
   const cartItemCount = getItemCount()
   
-  console.log('Header render - cartItemCount:', cartItemCount, 'user:', user?.email, 'profile:', profile?.full_name)
+  // console.log('Header render - cartItemCount:', cartItemCount, 'user:', user?.email, 'profile:', profile?.full_name)
 
   return (
     <header className="sticky top-0 z-40 bg-white shadow-sm border-b border-gray-200">
@@ -90,7 +90,7 @@ const Header: React.FC = () => {
               <ShoppingCart className="h-5 w-5" />
               {cartItemCount > 0 && (
                 <span className="absolute -top-1 -right-1 h-5 w-5 bg-primary-600 text-white rounded-full text-xs flex items-center justify-center">
-                  data-testid="cart-badge"
+                  
                   {cartItemCount}
                 </span>
               )}
